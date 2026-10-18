@@ -18,25 +18,27 @@ def get_pose_detector(model_path=None):
 
 def render_stickman_styled_frame(frame: np.ndarray, style: str, audio_loudness: float,
                                 out_w: int, out_h: int, prev_landmarks: np.ndarray | None,
-                                frame_idx: int = 0) -> tuple[np.ndarray, np.ndarray | None]:
-    detector = get_pose_detector()
-    
-    # Run pose detection on downscaled frame for performance
-    track_w, track_h = 540, 960
-    resized = cv2.resize(frame, (track_w, track_h))
-    mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(resized, cv2.COLOR_BGR2RGB))
-    res = detector.detect(mp_img)
+                                frame_idx: int = 0, sim_lms: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
+    if sim_lms is not None:
+        current_lms = sim_lms
+    else:
+        detector = get_pose_detector()
+        # Run pose detection on downscaled frame for performance
+        track_w, track_h = 540, 960
+        resized = cv2.resize(frame, (track_w, track_h))
+        mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(resized, cv2.COLOR_BGR2RGB))
+        res = detector.detect(mp_img)
 
-    current_lms = None
-    alpha = 0.35
-    if res.pose_landmarks and len(res.pose_landmarks) > 0:
-        raw_lms = np.array([[lm.x * out_w, lm.y * out_h] for lm in res.pose_landmarks[0]])
-        if prev_landmarks is None:
-            current_lms = raw_lms
-        else:
-            current_lms = alpha * raw_lms + (1.0 - alpha) * prev_landmarks
-    elif prev_landmarks is not None:
-        current_lms = prev_landmarks
+        current_lms = None
+        alpha = 0.35
+        if res.pose_landmarks and len(res.pose_landmarks) > 0:
+            raw_lms = np.array([[lm.x * out_w, lm.y * out_h] for lm in res.pose_landmarks[0]])
+            if prev_landmarks is None:
+                current_lms = raw_lms
+            else:
+                current_lms = alpha * raw_lms + (1.0 - alpha) * prev_landmarks
+        elif prev_landmarks is not None:
+            current_lms = prev_landmarks
 
     # Render according to chosen Stickman Video Director style
     if "Style 1A" in style:

@@ -244,10 +244,97 @@ def verify_output(path: str, expected_audio: bool):
 
 
 st.title("🎞️ Video-to-2D Animation Studio")
-st.caption("Local, CPU-friendly cartoon conversion for Shorts and Reels · maximum input duration: 120 seconds")
-st.info("This first version uses code-generated cartoon stylization. It does not yet reconstruct every person as a separate hand-drawn puppet rig or generate lip-sync animation.")
+st.caption("Turn Real-Life Videos OR Scripts into Viral 2D Animated Shorts & Reels with Lossless Audio")
 
-uploaded = st.file_uploader("Upload a video", type=["mp4", "mov", "m4v", "avi", "mkv", "webm"])
+tab_video, tab_script = st.tabs([
+    "📹 Video-to-2D Animation Studio",
+    "⚡ Script-to-Video Generator (Unlimited 1-Min+ Shorts)"
+])
+
+with tab_script:
+    st.subheader("⚡ Unlimited AI Script-to-Shorts Generator")
+    st.caption("Generate complete 1080×1920 vertical Shorts directly from a script or topic with neural voiceover, animated character, dynamic lip-sync, and kinetic captions.")
+
+    from script_to_video import VOICES, generate_speech_audio, render_animated_script_video
+
+    col_s1, col_s2 = st.columns([1, 1])
+    with col_s1:
+        script_topic = st.text_input("Shorts Topic / Hook Headline", value="ACHIEVERS MINDSET: CONSISTENCY")
+    with col_s2:
+        selected_voice_name = st.selectbox("Neural Voice Narrator (Free Microsoft Edge TTS)", list(VOICES.keys()))
+        selected_voice_id = VOICES[selected_voice_name]
+
+    script_content = st.text_area(
+        "Voiceover Script (Write or paste your script; 130–150 words = ~1 minute)",
+        value="Stop waiting for motivation. Motivation is a trap. You don't need to feel like doing the work, you just need to start. True achievers show up on the days when it is pouring rain and their energy is zero. Ruthless consistency will always beat sudden bursts of intensity. Build the system, execute every single morning, and let the compound effect do the rest.",
+        height=140
+    )
+
+    col_opt1, col_opt2 = st.columns(2)
+    with col_opt1:
+        script_char_style = st.selectbox("Character Avatar Style", [
+            "Style 2B: 2D Vector Broadcast Studio (Podcast Character Rig)",
+            "Style 2A: Modern Studio Tech (Red Beanie Zeke & Cyan Grid)",
+            "Style 1B: Classic Minimalist Dark (White Stickman Line-Art)",
+            "Style 1A: Classic Minimalist Light (Black Stickman Line-Art)"
+        ], key="script_char_style")
+    with col_opt2:
+        script_motion_overlay = st.selectbox("Motion Graphics Overlay", [
+            "All Motion (Particles + Audio Visualizer) [RECOMMENDED]",
+            "Audio Visualizer Ring (Reactive Equalizer Ring)",
+            "Cyber Grid Horizon (Synthwave Floor Grid)",
+            "Floating Ambient Bokeh Particles",
+            "None (Character Only)"
+        ], key="script_motion_overlay")
+
+    if st.button("🚀 Generate 1-Minute+ Animated Short", type="primary", use_container_width=True):
+        if not script_content.strip():
+            st.error("Please provide a script text.")
+        else:
+            with tempfile.TemporaryDirectory(prefix="script2d_") as script_workdir:
+                script_wav = os.path.join(script_workdir, "speech.wav")
+                script_mp4 = os.path.join(script_workdir, "generated_short.mp4")
+                p_bar = st.progress(0.0)
+                p_status = st.empty()
+                try:
+                    p_status.text("Synthesizing neural voiceover with Edge-TTS…")
+                    p_bar.progress(0.15)
+                    audio_dur = generate_speech_audio(script_content, selected_voice_id, script_wav)
+                    p_status.text(f"Voice synthesized ({audio_dur:.1f}s). Rendering 2D avatar and kinetic typography…")
+                    p_bar.progress(0.35)
+
+                    def script_cb(val, msg):
+                        p_bar.progress(0.35 + float(val) * 0.60)
+                        p_status.text(msg)
+
+                    res_video = render_animated_script_video(
+                        script_content, script_wav, script_mp4,
+                        style=script_char_style,
+                        opus_overlay=script_motion_overlay,
+                        topic_headline=script_topic,
+                        fps=25,
+                        progress_cb=script_cb
+                    )
+                    p_bar.progress(1.0)
+                    p_status.success(f"Generated {res_video['duration']:.1f}s Short successfully!")
+
+                    with open(script_mp4, "rb") as f:
+                        short_bytes = f.read()
+                    st.video(short_bytes)
+                    st.download_button(
+                        "Download Generated 1-Minute Short MP4",
+                        data=short_bytes,
+                        file_name=f"{script_topic.lower().replace(' ', '_')[:30]}_short.mp4",
+                        mime="video/mp4",
+                        use_container_width=True
+                    )
+                except Exception as ex:
+                    st.error(f"Generation failed: {ex}")
+                    st.exception(ex)
+
+with tab_video:
+    st.info("Upload any talking-head video or podcast clip below to convert it into a 2D animated avatar with reactive motion graphics.")
+    uploaded = st.file_uploader("Upload a video", type=["mp4", "mov", "m4v", "avi", "mkv", "webm"])
 if uploaded:
     with tempfile.TemporaryDirectory(prefix="video2d_") as workdir:
         source_path = os.path.join(workdir, "source" + Path(uploaded.name).suffix.lower())
