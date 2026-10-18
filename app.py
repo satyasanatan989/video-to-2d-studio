@@ -1,6 +1,20 @@
 from __future__ import annotations
-import os, tempfile, subprocess, json, time
+import os, sys, tempfile, subprocess, json, time
 from pathlib import Path
+
+# Force UTF-8 on Windows terminal so external libraries cannot crash on non-ASCII characters
+os.environ["PYTHONIOENCODING"] = "utf-8"
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import cv2
 import numpy as np
 import streamlit as st

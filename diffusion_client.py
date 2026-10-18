@@ -67,22 +67,28 @@ def generate_ltx_diffusion_video(
 ) -> str:
     """Generates pure cinematic neural diffusion video using Lightricks LTX-Video"""
     client = get_ltx_client()
-    result = client.predict(
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        input_image_filepath=None,
-        input_video_filepath=None,
-        height_ui=float(height),
-        width_ui=float(width),
-        mode="text-to-video",
-        duration_ui=float(duration),
-        ui_frames_to_use=9.0,
-        seed_ui=seed,
-        randomize_seed=randomize_seed,
-        ui_guidance_scale=1.0,
-        improve_texture_flag=True,
-        api_name="/text_to_video"
-    )
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    try:
+        result = client.predict(
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            input_image_filepath=None,
+            input_video_filepath=None,
+            height_ui=float(height),
+            width_ui=float(width),
+            mode="text-to-video",
+            duration_ui=float(duration),
+            ui_frames_to_use=9.0,
+            seed_ui=seed,
+            randomize_seed=randomize_seed,
+            ui_guidance_scale=1.0,
+            improve_texture_flag=True,
+            api_name="/text_to_video"
+        )
+    finally:
+        sys.stdout = old_stdout
+
     # result is (generated_video_dict, seed)
     video_info = result[0]
     if isinstance(video_info, dict) and "video" in video_info:
@@ -105,19 +111,25 @@ def generate_wan_diffusion_video(
     """Generates photorealistic diffusion video from reference image using Wan2.1 Fast"""
     client = get_wan_client()
     img_param = handle_file(image_path)
-    result = client.predict(
-        input_image=img_param,
-        prompt=prompt,
-        height=float(height),
-        width=float(width),
-        negative_prompt=negative_prompt,
-        duration_seconds=float(duration),
-        guidance_scale=1.0,
-        steps=4.0,
-        seed=float(seed),
-        randomize_seed=randomize_seed,
-        api_name="/generate_video"
-    )
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    try:
+        result = client.predict(
+            input_image=img_param,
+            prompt=prompt,
+            height=float(height),
+            width=float(width),
+            negative_prompt=negative_prompt,
+            duration_seconds=float(duration),
+            guidance_scale=1.0,
+            steps=4.0,
+            seed=float(seed),
+            randomize_seed=randomize_seed,
+            api_name="/generate_video"
+        )
+    finally:
+        sys.stdout = old_stdout
+
     video_info = result[0]
     if isinstance(video_info, dict) and "video" in video_info:
         return video_info["video"]
