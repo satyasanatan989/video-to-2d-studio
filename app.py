@@ -246,10 +246,85 @@ def verify_output(path: str, expected_audio: bool):
 st.title("🎞️ Video-to-2D Animation Studio")
 st.caption("Turn Real-Life Videos OR Scripts into Viral 2D Animated Shorts & Reels with Lossless Audio")
 
-tab_video, tab_script = st.tabs([
+tab_diffusion, tab_video, tab_script = st.tabs([
+    "🌌 AI Video Diffusion Generator (LTX-Video & Wan2.1)",
     "📹 Video-to-2D Animation Studio",
     "⚡ Script-to-Video Generator (Unlimited 1-Min+ Shorts)"
 ])
+
+with tab_diffusion:
+    st.subheader("🌌 Pure Neural AI Video Diffusion Generator (Like Sora & LTX)")
+    st.caption("Generate cinematic AI videos from text prompts or reference images using free open-source foundation models (**Lightricks LTX-Video** & **Wan2.1**) powered by high-performance cloud GPUs.")
+
+    import diffusion_client
+    diff_mode = st.radio("Diffusion Mode", ["Text-to-Video (LTX-Video Distilled)", "Image-to-Video (Wan2.1 Fast)"], horizontal=True)
+
+    if diff_mode.startswith("Text-to-Video"):
+        diff_prompt = st.text_area(
+            "Cinematic Prompt",
+            value="A confident entrepreneur standing on the neon-lit rooftop of a futuristic skyscraper at night, wind gently moving their jacket, cinematic anamorphic lighting, photorealistic 8k, highly detailed, dramatic camera push-in.",
+            height=100
+        )
+        col_d1, col_d2, col_d3 = st.columns(3)
+        with col_d1:
+            diff_aspect = st.selectbox("Resolution / Framing", ["Vertical 9:16 (512 × 704 - Shorts/Reels)", "Landscape 16:9 (704 × 512 - YouTube)"])
+        with col_d2:
+            diff_dur = st.slider("Duration (seconds)", 2.0, 5.0, 3.0, 0.5)
+        with col_d3:
+            diff_seed = st.number_input("Seed", value=42, step=1)
+
+        diff_w, diff_h = (512, 704) if "Vertical" in diff_aspect else (704, 512)
+
+        if st.button("🚀 Generate AI Diffusion Video", type="primary", use_container_width=True, key="btn_gen_ltx"):
+            with st.spinner("Connecting to Lightricks LTX-Video Cloud GPU endpoint... Generating diffusion frames..."):
+                try:
+                    res_video_path = diffusion_client.generate_ltx_diffusion_video(
+                        prompt=diff_prompt,
+                        width=diff_w,
+                        height=diff_h,
+                        duration=diff_dur,
+                        seed=int(diff_seed)
+                    )
+                    st.success("Cinematic AI video generated successfully!")
+                    with open(res_video_path, "rb") as f:
+                        v_bytes = f.read()
+                    st.video(v_bytes)
+                    st.download_button("Download Diffusion MP4", data=v_bytes, file_name="ai_diffusion_video.mp4", mime="video/mp4", use_container_width=True)
+                except Exception as ex:
+                    st.error(f"Generation failed: {ex}")
+                    st.info("Tip: Public Hugging Face GPU queues can occasionally be busy. Try again in 10-20 seconds or use a slightly shorter prompt.")
+
+    else:
+        wan_img = st.file_uploader("Upload starting image / portrait", type=["jpg", "png", "webp"], key="wan_img_upload")
+        wan_prompt = st.text_area(
+            "Motion / Animation Prompt",
+            value="Make this person come alive, talking naturally with realistic facial expressions and head turns, cinematic film lighting, high quality motion",
+            height=80
+        )
+        if wan_img:
+            st.image(wan_img, width=300)
+            if st.button("🚀 Animate Image with Wan2.1 Diffusion", type="primary", use_container_width=True, key="btn_gen_wan"):
+                with tempfile.TemporaryDirectory() as t_dir:
+                    t_img_path = os.path.join(t_dir, "input.jpg")
+                    with open(t_img_path, "wb") as f:
+                        f.write(wan_img.getbuffer())
+                    with st.spinner("Connecting to Wan2.1 Fast Diffusion endpoint... Rendering frames..."):
+                        try:
+                            res_wan_path = diffusion_client.generate_wan_diffusion_video(
+                                image_path=t_img_path,
+                                prompt=wan_prompt,
+                                width=512,
+                                height=704,
+                                duration=3.0
+                            )
+                            st.success("Wan2.1 video generated successfully!")
+                            with open(res_wan_path, "rb") as f:
+                                w_bytes = f.read()
+                            st.video(w_bytes)
+                            st.download_button("Download Wan2.1 MP4", data=w_bytes, file_name="wan2_diffusion_video.mp4", mime="video/mp4", use_container_width=True)
+                        except Exception as ex:
+                            st.error(f"Generation failed: {ex}")
+                            st.info("Tip: Public Hugging Face GPU queues can occasionally be busy. Try again in a moment.")
 
 with tab_script:
     st.subheader("⚡ Unlimited AI Script-to-Shorts Generator")
