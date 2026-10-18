@@ -6,9 +6,24 @@ Connects directly to top-tier free open-source diffusion models:
 """
 from __future__ import annotations
 import os
+import sys
+import io
 import shutil
 import cv2
 import numpy as np
+
+# Ensure Windows stdout/stderr handles UTF-8 unicode characters (e.g. checkmarks)
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from gradio_client import Client, handle_file
 
 LTX_SPACE = "Lightricks/ltx-video-distilled"
@@ -20,13 +35,24 @@ _wan_client = None
 def get_ltx_client():
     global _ltx_client
     if _ltx_client is None:
-        _ltx_client = Client(LTX_SPACE)
+        # Suppress gradio_client print that uses \u2714 checkmark on Windows
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            _ltx_client = Client(LTX_SPACE)
+        finally:
+            sys.stdout = old_stdout
     return _ltx_client
 
 def get_wan_client():
     global _wan_client
     if _wan_client is None:
-        _wan_client = Client(WAN_SPACE)
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            _wan_client = Client(WAN_SPACE)
+        finally:
+            sys.stdout = old_stdout
     return _wan_client
 
 
