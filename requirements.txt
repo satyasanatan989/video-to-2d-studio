@@ -1,0 +1,10 @@
+# Core Framework & Video Processing
+streamlit>=1.42.0
+opencv-python>=4.11.0
+numpy>=2.2.0
+imageio>=2.37.0
+imageio-ffmpeg>=0.6.0
+torch>=2.6.0
+torchvision>=0.21.0
+mediapipe>=0.10.21
+scipy>=1.15.0
