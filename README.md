@@ -61,7 +61,7 @@ Combines cinematic 2D character rigging from [`kaomei/stickman-video-director`](
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/krishna7671/video-to-2d-studio.git
+git clone https://github.com/satyasanatan989/video-to-2d-studio.git
 cd video-to-2d-studio
 ```
 
